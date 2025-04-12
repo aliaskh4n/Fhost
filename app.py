@@ -7,6 +7,8 @@ import subprocess
 import mimetypes
 
 app = Flask(__name__)
+# Сохраняем время запуска приложения
+app.start_time = time.time()
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'html', 'css', 'js', 'py', 'json', 'md', 'csv', 'xlsx'}
 
@@ -68,7 +70,13 @@ def get_system_info():
             info['cpu_cores'] = str(len(cores)) if cores else '1'
             info['cpu_threads'] = str(threads)
         except:
-            pass
+            # Альтернативный способ получения информации о CPU
+            try:
+                cpu_info_alt = subprocess.check_output(['nproc', '--all']).decode('utf-8').strip()
+                info['cpu_cores'] = cpu_info_alt
+                info['cpu_threads'] = cpu_info_alt
+            except:
+                pass
     
     # Информация о памяти из /proc/meminfo (только для Linux)
     info['total_memory'] = 'N/A'
@@ -92,28 +100,45 @@ def get_system_info():
                 usage_percent = (total - available) / total * 100
                 info['memory_usage'] = f"{usage_percent:.1f}%"
         except:
-            pass
+            # Альтернативный способ через free
+            try:
+                free_output = subprocess.check_output(['free', '-b']).decode('utf-8').strip()
+                lines = free_output.split('\n')
+                if len(lines) >= 2:
+                    mem_line = lines[1].split()
+                    if len(mem_line) >= 3:
+                        total = int(mem_line[1])
+                        used = int(mem_line[2])
+                        info['total_memory'] = format_size(total)
+                        if total > 0:
+                            usage_percent = (used / total) * 100
+                            info['memory_usage'] = f"{usage_percent:.1f}%"
+            except:
+                pass
     
     # Информация о диске
     try:
         if platform.system() == 'Windows':
-            total, used, free = shutil.disk_usage('/')
+            total, used, free = (0, 0, 0)  # Shutil работает только в Windows
         else:
             df_output = subprocess.check_output(['df', '-h', '/']).decode('utf-8').split('\n')[1]
             parts = df_output.split()
-            total = parts[1]
-            free = parts[3]
-            used_percent = parts[4]
-            info['total_disk'] = total
-            info['free_disk'] = free
-            info['disk_usage'] = used_percent
+            if len(parts) >= 5:
+                total = parts[1]
+                free = parts[3]
+                used_percent = parts[4]
+                info['total_disk'] = total
+                info['free_disk'] = free
+                info['disk_usage'] = used_percent
     except:
         info['total_disk'] = 'N/A'
         info['free_disk'] = 'N/A'
         info['disk_usage'] = 'N/A'
     
-    # Время работы системы из /proc/uptime (только для Linux)
+    # Время работы системы - улучшенный метод с несколькими альтернативами
     info['uptime'] = 'N/A'
+    
+    # Метод 1: через /proc/uptime
     if os.path.exists('/proc/uptime'):
         try:
             with open('/proc/uptime', 'r') as f:
@@ -122,47 +147,78 @@ def get_system_info():
         except:
             pass
     
-    # IP-адрес сервера
+    # Метод 2: через команду uptime
+    if info['uptime'] == 'N/A':
+        try:
+            uptime_output = subprocess.check_output(['uptime']).decode('utf-8').strip()
+            # Парсим вывод команды uptime
+            if 'up' in uptime_output:
+                uptime_part = uptime_output.split('up ')[1].split(',')[0].strip()
+                info['uptime'] = uptime_part
+        except:
+            pass
+    
+    # Метод 3: через время создания /proc/self
+    if info['uptime'] == 'N/A':
+        try:
+            boot_time = os.stat('/proc/self').st_ctime
+            current_time = time.time()
+            uptime_seconds = current_time - boot_time
+            info['uptime'] = format_uptime(int(uptime_seconds))
+        except:
+            pass
+    
+    # Метод 4: используем время запуска приложения
+    if info['uptime'] == 'N/A':
+        if hasattr(app, 'start_time'):
+            uptime_seconds = time.time() - app.start_time
+            info['uptime'] = format_uptime(int(uptime_seconds)) + ' (app)'
+    
+    # IP-адрес сервера - улучшенный метод с несколькими альтернативами
+    info['ip_address'] = 'Недоступно'
+    
+    # Метод 1: через ip addr
     try:
-        # Получаем IP-адрес, используя ifconfig или ip addr
-        if os.name == 'nt':  # Windows
-            ipconfig = subprocess.check_output(['ipconfig']).decode('utf-8', errors='ignore')
-            for line in ipconfig.split('\n'):
-                if 'IPv4' in line and ('192.168.' in line or '10.' in line):
-                    info['ip_address'] = line.split(':')[-1].strip()
+        command = ['ip', 'addr', 'show']
+        netinfo = subprocess.check_output(command).decode('utf-8', errors='ignore')
+        for line in netinfo.split('\n'):
+            if 'inet ' in line and not '127.0.0.1' in line:
+                for prefix in ['192.168.', '10.', '172.']:
+                    if prefix in line:
+                        info['ip_address'] = line.split()[1].split('/')[0]
+                        break
+                if info['ip_address'] != 'Недоступно':
                     break
-        else:  # Linux/Unix
-            command = 'ip addr show' if os.path.exists('/sbin/ip') else 'ifconfig'
-            try:
-                netinfo = subprocess.check_output(command.split()).decode('utf-8', errors='ignore')
-            except:
-                # Если команда не найдена, пробуем для Termux
-                try:
-                    netinfo = subprocess.check_output(['ip', 'addr', 'show']).decode('utf-8', errors='ignore')
-                except:
-                    netinfo = ""
-                    
+    except:
+        pass
+    
+    # Метод 2: через ifconfig
+    if info['ip_address'] == 'Недоступно':
+        try:
+            command = ['ifconfig']
+            netinfo = subprocess.check_output(command).decode('utf-8', errors='ignore')
             for line in netinfo.split('\n'):
                 if 'inet ' in line and not '127.0.0.1' in line:
-                    found = False
                     for prefix in ['192.168.', '10.', '172.']:
                         if prefix in line:
-                            info['ip_address'] = line.split()[1].split('/')[0]
-                            found = True
-                            break
-                    if found:
+                            parts = line.split()
+                            for i, part in enumerate(parts):
+                                if part == 'inet':
+                                    info['ip_address'] = parts[i+1].split('/')[0]
+                                    break
+                    if info['ip_address'] != 'Недоступно':
                         break
-            
-            # Если IP не найден, пробуем через hostname -I
-            if 'ip_address' not in info:
-                try:
-                    ip = subprocess.check_output(['hostname', '-I']).decode('utf-8').strip().split()[0]
-                    if ip:
-                        info['ip_address'] = ip
-                except:
-                    info['ip_address'] = 'Недоступно'
-    except:
-        info['ip_address'] = 'Недоступно'
+        except:
+            pass
+    
+    # Метод 3: через hostname -I
+    if info['ip_address'] == 'Недоступно':
+        try:
+            ip = subprocess.check_output(['hostname', '-I']).decode('utf-8').strip().split()[0]
+            if ip:
+                info['ip_address'] = ip
+        except:
+            pass
     
     # Порт Flask
     info['port'] = '8080'  # Hardcoded из __main__
