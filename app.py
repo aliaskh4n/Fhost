@@ -1,142 +1,491 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-import os
-import datetime
-
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'html', 'css', 'js'}
-
-# Создаем папку для загрузок, если она не существует
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-def get_directory_size(path):
-    """Рассчитывает общий размер файлов в директории"""
-    total_size = 0
-    for dirpath, dirnames, filenames in os.walk(path):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            if os.path.exists(fp) and os.path.isfile(fp):
-                total_size += os.path.getsize(fp)
-    return total_size
-
-def format_size(size_bytes):
-    """Форматирует размер в байтах в удобочитаемый формат"""
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 * 1024:
-        return f"{size_bytes/1024:.1f} KB"
-    elif size_bytes < 1024 * 1024 * 1024:
-        return f"{size_bytes/(1024*1024):.1f} MB"
-    else:
-        return f"{size_bytes/(1024*1024*1024):.1f} GB"
-
-@app.route('/')
-def index():
-    # Получаем список файлов в корневой директории
-    files = [f for f in os.listdir('.') if os.path.isfile(f)]
-    directories = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
-    
-    # Получаем размер текущей директории
-    dir_size = get_directory_size('.')
-    formatted_size = format_size(dir_size)
-    
-    # Получаем размеры файлов
-    file_sizes = {}
-    for file in files:
-        try:
-            file_sizes[file] = format_size(os.path.getsize(file))
-        except:
-            file_sizes[file] = "0 B"
-    
-    current_year = datetime.datetime.now().year
-    platform = os.name.upper() if os.name else "Termux"
-    
-    return render_template('index.html', 
-                          files=files, 
-                          directories=directories, 
-                          path='.',
-                          total_size=formatted_size,
-                          file_sizes=file_sizes,
-                          current_year=current_year,
-                          platform=platform)
-
-@app.route('/browse/<path:subpath>')
-def browse(subpath):
-    # Проверка на безопасность пути
-    if '..' in subpath:
-        return "Доступ запрещен", 403
-    
-    full_path = os.path.join('.', subpath)
-    if os.path.isfile(full_path):
-        return send_from_directory('.', subpath)
-    
-    files = [f for f in os.listdir(full_path) if os.path.isfile(os.path.join(full_path, f))]
-    directories = [d for d in os.listdir(full_path) if os.path.isdir(os.path.join(full_path, d)) and not d.startswith('.')]
-    
-    # Получаем размер текущей директории
-    dir_size = get_directory_size(full_path)
-    formatted_size = format_size(dir_size)
-    
-    # Получаем размеры файлов
-    file_sizes = {}
-    for file in files:
-        try:
-            file_path = os.path.join(full_path, file)
-            file_sizes[file] = format_size(os.path.getsize(file_path))
-        except:
-            file_sizes[file] = "0 B"
-    
-    current_year = datetime.datetime.now().year
-    platform = os.name.upper() if os.name else "Termux"
-    
-    return render_template('index.html', 
-                          files=files, 
-                          directories=directories, 
-                          path=subpath,
-                          total_size=formatted_size,
-                          file_sizes=file_sizes,
-                          current_year=current_year,
-                          platform=platform)
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    # Проверяем, был ли файл отправлен
-    if 'file' not in request.files:
-        return redirect(request.referrer or url_for('index'))
-    
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(request.referrer or url_for('index'))
-    
-    if file and allowed_file(file.filename):
-        # Определяем директорию для загрузки в зависимости от типа файла
-        filename = file.filename
-        file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fhost</title>
+    <style>
+        :root {
+            --primary-color: #0095ff;
+            --primary-dark: #007acc;
+            --secondary-color: #bb86fc;
+            --text-color: #e1e1e1;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --card-header-bg: #252525;
+            --border-color: #333;
+            --path-bg: #252525;
+            --path-border: #007acc;
+            --empty-color: #666;
+            --border-radius: 8px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.2);
+            --transition: all 0.3s ease;
+        }
         
-        # Если это HTML-файл, всегда загружаем в UPLOAD_FOLDER
-        if file_extension == 'html':
-            upload_path = app.config['UPLOAD_FOLDER']
-        else:
-            # Для других типов файлов используем указанный путь
-            upload_path = request.form.get('path', app.config['UPLOAD_FOLDER'])
-            # Проверка на безопасность пути
-            if '..' in upload_path:
-                return "Доступ запрещен", 403
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         
-        # Создаем директорию, если не существует
-        os.makedirs(upload_path, exist_ok=True)
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            line-height: 1.6;
+        }
         
-        # Сохраняем файл
-        filepath = os.path.join(upload_path, file.filename)
-        file.save(filepath)
+        /* Полоса прокрутки */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
         
-        # Перенаправляем обратно
-        return redirect(request.referrer or url_for('index'))
-    
-    return redirect(request.referrer or url_for('index'))
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+        
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .project-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-top: 3px solid var(--primary-color);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 500;
+            margin: 0 0 20px 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h1 svg {
+            color: var(--primary-color);
+        }
+        
+        main {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            width: 100%;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--card-header-bg);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        .path-info {
+            background-color: var(--path-bg);
+            padding: 14px 18px;
+            border-radius: var(--border-radius);
+            font-family: 'Consolas', 'Monaco', monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            border-left: 4px solid var(--path-border);
+            margin-bottom: 20px;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 500;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .back-button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .back-button svg {
+            margin-right: 8px;
+        }
+        
+        .file-list {
+            list-style-type: none;
+        }
+        
+        .file-item {
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-item:hover {
+            background-color: rgba(0, 149, 255, 0.1);
+        }
+        
+        .file-link {
+            padding: 14px 16px;
+            text-decoration: none;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-icon {
+            margin-right: 12px;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+        
+        .directory-icon {
+            color: var(--secondary-color);
+        }
+        
+        .file-name {
+            word-break: break-all;
+            flex-grow: 1;
+        }
+        
+        .file-size {
+            color: #888;
+            font-size: 0.85em;
+            margin-left: 5px;
+        }
+        
+        .directory-name {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+        
+        .upload-form {
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+            border: 2px dashed #444;
+            border-radius: var(--border-radius);
+            padding: 30px 20px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .file-input-wrapper:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 149, 255, 0.05);
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-input-message {
+            color: #aaa;
+            font-size: 1rem;
+        }
+        
+        .file-input-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: var(--transition);
+            text-align: center;
+            display: inline-block;
+            text-transform: none;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .empty-dir {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--empty-color);
+        }
+        
+        .empty-dir-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #444;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+        }
+        
+        /* Адаптивный дизайн */
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .grid-layout {
+                grid-template-columns: 2fr 1fr;
+            }
+            
+            .card-header {
+                padding: 20px 30px;
+            }
+            
+            .card-body {
+                padding: 30px;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <main>
+            <h1>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 9V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1"/>
+                    <path d="M2 13h10"/>
+                    <path d="m9 16 3-3-3-3"/>
+                </svg>
+                fhost
+            </h1>
+            
+            <div class="project-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ directories|length }}</div>
+                    <div class="stat-label">Директории</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ files|length }}</div>
+                    <div class="stat-label">Файлы</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_size }}</div>
+                    <div class="stat-label">Размер</div>
+                </div>
+            </div>
+            
+            <div class="path-info">
+                Текущий путь: {{ path }}
+            </div>
+            
+            {% if path != '.' %}
+            <a href="/" class="back-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                На главную
+            </a>
+            {% endif %}
+            
+            <div class="grid-layout">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Содержимое директории</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul class="file-list">
+                            {% for directory in directories %}
+                                <li class="file-item">
+                                    <a href="{{ url_for('browse', subpath=path + '/' + directory if path != '.' else directory) }}" class="file-link">
+                                        <span class="file-icon directory-icon">📁</span>
+                                        <span class="file-name directory-name">{{ directory }}/</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            
+                            {% for file in files %}
+                                <li class="file-item">
+                                    <a href="{{ url_for('browse', subpath=path + '/' + file if path != '.' else file) }}" class="file-link">
+                                        <span class="file-icon">📄</span>
+                                        <span class="file-name">{{ file }} <span class="file-size">({{ file_sizes[file] }})</span></span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            
+                            {% if not files and not directories %}
+                                <div class="empty-dir">
+                                    <div class="empty-dir-icon">📂</div>
+                                    <p>Директория пуста</p>
+                                </div>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Загрузить файл</h2>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="upload-form">
+                            <input type="hidden" name="path" value="{{ path }}">
+                            
+                            <div class="file-input-wrapper">
+                                <div class="file-input-icon">📤</div>
+                                <div class="file-input-message">Нажмите или перетащите файл</div>
+                                <input type="file" name="file" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-block">Загрузить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            &copy; {{ current_year }} fhost | Запущен на {{ platform }}
+        </footer>
+        
+        <script>
+            // Обработчик для отображения имени и размера выбранного файла
+            document.addEventListener('DOMContentLoaded', function() {
+                // Добавляем обработчик для input file
+                const fileInput = document.querySelector('input[type="file"]');
+                const fileMessage = document.querySelector('.file-input-message');
+                const originalMessage = fileMessage.textContent;
+                
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length) {
+                        const file = this.files[0];
+                        fileMessage.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+                    } else {
+                        fileMessage.textContent = originalMessage;
+                    }
+                });
+                
+                function formatFileSize(bytes) {
+                    if (bytes >= 1024 * 1024) {
+                        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                    } else if (bytes >= 1024) {
+                        return (bytes / 1024).toFixed(1) + ' KB';
+                    } else {
+                        return bytes + ' bytes';
+                    }
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>
