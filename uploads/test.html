@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Свадебное приглашение</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Montserrat:wght@300;400;500&family=Great+Vibes&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #f9f7f5 0%, #f1ece6 100%);
+            color: #3a3a3a;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        .invitation-card {
+            width: 100%;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        
+        .invitation-card:hover {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+        
+        .card-inner {
+            padding: 60px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+        }
+        
+        .decorative-border {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 1px solid rgba(194, 162, 132, 0.3);
+            border-radius: 10px;
+            z-index: 1;
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+        
+        .invitation-card:hover .decorative-border {
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border: 1px solid rgba(194, 162, 132, 0.6);
+        }
+        
+        .floral-design {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.15;
+        }
+        
+        .corner {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        
+        .invitation-card:hover .corner {
+            opacity: 0.2;
+        }
+        
+        .top-left {
+            top: 0;
+            left: 0;
+        }
+        
+        .top-right {
+            top: 0;
+            right: 0;
+            transform: scaleX(-1);
+        }
+        
+        .bottom-left {
+            bottom: 0;
+            left: 0;
+            transform: scaleY(-1);
+        }
+        
+        .bottom-right {
+            bottom: 0;
+            right: 0;
+            transform: scale(-1);
+        }
+        
+        .header {
+            margin-bottom: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .subheading {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-size: 14px;
+            color: #c2a284;
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .subheading:before, .subheading:after {
+            content: "";
+            position: absolute;
+            height: 1px;
+            width: 0;
+            background: #c2a284;
+            top: 50%;
+            transition: width 1s ease;
+        }
+        
+        .subheading:before {
+            right: 100%;
+            margin-right: 15px;
+        }
+        
+        .subheading:after {
+            left: 100%;
+            margin-left: 15px;
+        }
+        
+        .invitation-card:hover .subheading:before, 
+        .invitation-card:hover .subheading:after {
+            width: 50px;
+        }
+        
+        h1 {
+            font-family: 'Great Vibes', cursive;
+            font-weight: 400;
+            font-size: 72px;
+            color: #3a3a3a;
+            line-height: 1.2;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #c2a284, #d4b79b, #c2a284);
+            background-size: 200% auto;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 10s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        .names {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px;
+            margin: 20px 0;
+            color: #c2a284;
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+        }
+        
+        .names:before, .names:after {
+            content: "♥";
+            color: rgba(194, 162, 132, 0.5);
+            font-size: 16px;
+            vertical-align: middle;
+            margin: 0 15px;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            display: inline-block;
+        }
+        
+        .invitation-card:hover .names:before, 
+        .invitation-card:hover .names:after {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+        
+        .date-venue {
+            margin: 40px 0;
+            padding: 30px;
+            border-radius: 10px;
+            background: rgba(249, 247, 245, 0.5);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .invitation-card:hover .date-venue {
+            background: rgba(249, 247, 245, 0.8);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+        
+        .date-venue:before, .date-venue:after {
+            content: "";
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(194, 162, 132, 0.1), transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            transition: all 0.8s ease;
+        }
+        
+        .date-venue:before {
+            top: -100px;
+            left: -100px;
+        }
+        
+        .date-venue:after {
+            bottom: -100px;
+            right: -100px;
+        }
+        
+        .invitation-card:hover .date-venue:before {
+            transform: scale(1.2);
+        }
+        
+        .invitation-card:hover .date-venue:after {
+            transform: scale(1.2);
+        }
+        
+        .date {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .date:after {
+            content: "";
+            position: absolute;
+            height: 1px;
+            width: 60px;
+            background: rgba(194, 162, 132, 0.5);
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: width 0.5s ease;
+        }
+        
+        .invitation-card:hover .date:after {
+            width: 100px;
+        }
+        
+        .venue {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            font-size: 16px;
+            max-width: 80%;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        
+        .venue div {
+            margin-bottom: 5px;
+            transform: translateY(5px);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+        
+        .invitation-card:hover .venue div {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .message {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.8;
+            font-weight: 300;
+            padding: 0 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+        }
+        
+        .message:before, .message:after {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            border: 1px solid rgba(194, 162, 132, 0.3);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .message:before {
+            top: -10px;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .message:after {
+            bottom: -10px;
+            right: 0;
+            border-left: none;
+            border-top: none;
+        }
+        
+        .invitation-card:hover .message:before, 
+        .invitation-card:hover .message:after {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .rsvp {
+            margin-top: 60px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .countdown {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .countdown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .countdown-value {
+            font-size: 32px;
+            font-family: 'Cormorant Garamond', serif;
+            color: #c2a284;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        
+        .countdown-value:after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(194, 162, 132, 0.3);
+            border-radius: 50%;
+            transition: all 0.5s ease;
+        }
+        
+        .invitation-card:hover .countdown-value:after {
+            transform: scale(1.1);
+            border-color: rgba(194, 162, 132, 0.5);
+        }
+        
+        .countdown-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+        }
+        
+        .rsvp-button {
+            display: inline-block;
+            border: 1px solid #c2a284;
+            color: #c2a284;
+            padding: 14px 40px;
+            text-decoration: none;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 14px;
+            transition: all 0.5s ease;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .rsvp-button:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background-color: #c2a284;
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+        
+        .rsvp-button:hover {
+            color: white;
+        }
+        
+        .rsvp-button:hover:before {
+            width: 100%;
+        }
+        
+        .rsvp-text {
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .footer {
+            margin-top: 70px;
+            font-size: 14px;
+            color: #999;
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+        }
+        
+        .divider {
+            display: inline-block;
+            width: 40px;
+            height: 1px;
+            background-color: rgba(194, 162, 132, 0.5);
+            margin: 0 10px;
+            vertical-align: middle;
+            transition: width 0.5s ease;
+        }
+        
+        .invitation-card:hover .divider {
+            width: 60px;
+        }
+        
+        .hearts {
+            width: 200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .heart-container {
+            position: relative;
+            margin: 0 10px;
+        }
+        
+        .heart {
+            font-size: 28px;
+            color: #c2a284;
+            animation: pulse 2s infinite;
+            position: relative;
+        }
+        
+        .heart-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            font-size: 28px;
+            color: rgba(194, 162, 132, 0.2);
+            z-index: -1;
+            animation: pulse-bg 2s infinite 0.2s;
+        }
+        
+        .heart-container:nth-child(2) .heart,
+        .heart-container:nth-child(2) .heart-bg {
+            font-size: 38px;
+            animation-delay: 0.3s;
+        }
+        
+        .heart-container:nth-child(3) .heart,
+        .heart-container:nth-child(3) .heart-bg {
+            animation-delay: 0.6s;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse-bg {
+            0% {
+                transform: scale(1.2);
+            }
+            50% {
+                transform: scale(1.5);
+            }
+            100% {
+                transform: scale(1.2);
+            }
+        }
+        
+        .gallery {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .gallery-item {
+            width: 80px;
+            height: 80px;
+            margin: 0 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+            transform: rotate(0deg);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.5s ease;
+        }
+        
+        .invitation-card:hover .gallery-item {
+            transform: rotate(0deg) !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .invitation-card:hover .gallery-item img {
+            transform: scale(1.1);
+        }
+        
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        
+        .social-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(194, 162, 132, 0.3);
+            color: #c2a284;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .invitation-card:hover .social-icon {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .social-icon:hover {
+            background-color: #c2a284;
+            color: white;
+            border-color: #c2a284;
+            transform: translateY(-3px) !important;
+        }
+        
+        /* Animation sequence classes */
+        .fade-in {
+            animation: fadeIn 0.8s forwards;
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.8s forwards;
+        }
+        
+        .fade-in-up-delay-1 {
+            animation: fadeInUp 0.8s forwards 0.2s;
+        }
+        
+        .fade-in-up-delay-2 {
+            animation: fadeInUp 0.8s forwards 0.4s;
+        }
+        
+        .fade-in-up-delay-3 {
+            animation: fadeInUp 0.8s forwards 0.6s;
+        }
+        
+        .fade-in-up-delay-4 {
+            animation: fadeInUp 0.8s forwards 0.8s;
+        }
+        
+        .fade-in-up-delay-5 {
+            animation: fadeInUp 0.8s forwards 1s;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .card-inner {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 48px;
+            }
+            
+            .names {
+                font-size: 30px;
+            }
+            
+            .date {
+                font-size: 22px;
+            }
+            
+            .gallery-item {
+                width: 60px;
+                height: 60px;
+                margin: 0 5px;
+            }
+            
+            .countdown {
+                gap: 10px;
+            }
+            
+            .countdown-value {
+                font-size: 24px;
+                width: 50px;
+                height: 50px;
+            }
+            
+            .countdown-label {
+                font-size: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .card-inner {
+                padding: 30px 15px;
+            }
+            
+            h1 {
+                font-size: 36px;
+            }
+            
+            .names {
+                font-size: 24px;
+            }
+            
+            .gallery {
+                flex-wrap: wrap;
+            }
+            
+            .gallery-item {
+                margin-bottom: 10px;
+            }
+            
+            .countdown-value {
+                font-size: 20px;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .countdown-label {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div class="invitation-card">
+        <div class="decorative-border"></div>
+        <div class="corner top-left">
+            <img src="/api/placeholder/200/200" alt="Декоративный элемент" style="opacity: 0.3;">
+        </div>
+        <div class="corner top-right">
+            <img src="/api/placeholder/200/200" alt="Декоративный элемент" style="opacity: 0.3;">
+        </div>
+        <div class="corner bottom-left">
+            <img src="/api/placeholder/200/200" alt="Декоративный элемент" style="opacity: 0.3;">
+        </div>
+        <div class="corner bottom-right">
+            <img src="/api/placeholder/200/200" alt="Декоративный элемент" style="opacity: 0.3;">
+        </div>
+        
+        <div class="card-inner">
+            <div class="header">
+                <div class="subheading">Приглашение на свадьбу</div>
+                <h1>Мы женимся</h1>
+            </div>
+            
+            <div class="hearts">
+                <div class="heart-container">
+                    <span class="heart"><i class="fas fa-heart"></i></span>
+                    <span class="heart-bg"><i class="fas fa-heart"></i></span>
+                </div>
+                <div class="heart-container">
+                    <span class="heart"><i class="fas fa-heart"></i></span>
+                    <span class="heart-bg"><i class="fas fa-heart"></i></span>
+                </div>
+                <div class="heart-container">
+                    <span class="heart"><i class="fas fa-heart"></i></span>
+                    <span class="heart-bg"><i class="fas fa-heart"></i></span>
+                </div>
+            </div>
+            
+            <div class="names">Анна и Михаил</div>
+            
+            <div class="gallery">
+                <div class="gallery-item" style="transform: rotate(-5deg);">
+                    <img src="/api/placeholder/80/80" alt="Фото пары">
+                </div>
+                <div class="gallery-item" style="transform: rotate(3deg);">
+                    <img src="/api/placeholder/80/80" alt="Фото пары">
+                </div>
+                <div class="gallery-item" style="transform: rotate(-2deg);">
+                    <img src="/api/placeholder/80/80" alt="Фото пары">
+                </div>
+                <div class="gallery-item" style="transform: rotate(5deg);">
+                    <img src="/api/placeholder/80/80" alt="Фото пары">
+                </div>
+            </div>
+            
+            <div class="message">
+                С большой радостью приглашаем вас разделить с нами один из самых важных дней в нашей жизни. Ваше присутствие сделает этот день еще более особенным.
+            </div>
+            
+            <div class="date-venue">
+                <div class="date">15 сентября 2025 года</div>
+                <div class="venue">
+                    <div>Ресторан «Лазурный берег»</div>
+                    <div>ул. Приморская, 45, Москва</div>
+                    <div>Начало в 16:00</div>
+                </div>
+            </div>
+            
+            <div class="rsvp">
+                <div class="countdown">
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-days">00</div>
+                        <div class="countdown-label">Дней</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-hours">00</div>
+                        <div class="countdown-label">Часов</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-minutes">00</div>
+                        <div class="countdown-label">Минут</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-seconds">00</div>
+                        <div class="countdown-label">Секунд</div>
+                    </div>
+                </div>
+                <div class="rsvp-text">Просим подтвердить ваше присутствие до 15 августа</div>
+                <a href="#" class="rsvp-button">Подтвердить</a>
+            </div>
+            
+            <div class="social-icons">
+                <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="social-icon"><i class="fas fa-envelope"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            
+            <div class="footer">
+                <div><span class="divider"></span> С любовью <span class="divider"></span></div>
+                <div>Анна и Михаил</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Particles.js
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 30,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#c2a284"
+                },
+                "shape": {
+                    "type": "circle",
+                    "stroke": {
+                        "width": 0,
+                        "color": "#000000"
+                    },
+                    "polygon": {
+                        "nb_sides": 5
+                    }
+                },
+                "opacity": {
+                    "value": 0.3,
+                    "random": true,
+                    "anim": {
+                        "enable": false,
+                        "speed": 1,
+                        "opacity_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "size": {
+                    "value": 5,
+                    "random": true,
+                    "anim": {
+                        "enable": false,
+                        "speed": 40,
+                        "size_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#c2a284",
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                    "attract": {
+                        "enable": false,
+                        "rotateX": 600,
+                        "rotateY": 1200
+                    }
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": false,
+                        "mode": "push"
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 140,
+                        "line_linked": {
+                            "opacity": 0.5
+                        }
+                    },
+                    "bubble": {
+                        "distance": 400,
+                        "size": 40,
+                        "duration": 2,
+                        "opacity": 8,
+                        "speed": 3
+                    },
+                    "repulse": {
+                        "distance": 200,
+                        "duration": 0.4
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    },
+                    "remove": {
+                        "particles_nb": 2
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+
+        // Анимация появления элементов
+        document.addEventListener('DOMContentLoaded', function() {
+            const cardInner = document.querySelector('.card-inner');
+            cardInner.style.opacity = '1';
+            
+            const elements = [
+                { selector: '.header', className: 'fade-in-up' },
+                { selector: '.hearts', className: 'fade-in-up-delay-1' },
+                { selector: '.names', className: 'fade-in-up-delay-1' },
+                { selector: '.gallery', className: 'fade-in-up-delay-2' },
+                { selector: '.message', className: 'fade-in-up-delay-2' },
+                { selector: '.date-venue', className: 'fade-in-up-delay-3' },
+                { selector: '.rsvp', className: 'fade-in-up-delay-4' },
+                { selector: '.social-icons .social-icon', className: 'fade-in-up-delay-4' },
+                { selector: '.footer', className: 'fade-in-up-delay-5' }
+            ];
+            
+            elements.forEach(item => {
+                const els = document.querySelectorAll(item.selector);
+                els.forEach(el => {
+                    el.classList.add(item.className);
+                });
+            });
+            
+            // Обработка социальных иконок по отдельности
+            const socialIcons = document.querySelectorAll('.social-icon');
+            socialIcons.forEach((icon, index) => {
+                icon.style.transitionDelay = `${0.1 * (index + 1)}s`;
+            });
+            
+            // Обработка элементов галереи
+            const galleryItems = document.querySelectorAll('.gallery-item');
+            galleryItems.forEach((item, index) => {
+                item.style.transitionDelay = `${0.1 * (index + 1)}s`;
+            });
+            
+            // Обработка элементов места проведения
+            const venueElements = document.querySelectorAll('.venue div');
+            venueElements.forEach((el, index) => {
+                el.style.transitionDelay = `${0.1 * (index + 1)}s`;
+            });
+        });
+        
+        // Обратный отсчет до свадьбы
+        function updateCountdown() {
+            const weddingDate = new Date('September 15, 2025 16:00:00').getTime();
+            const now = new Date().getTime();
+            const distance = weddingDate - now;
+            
+            // Расчет дней, часов, минут и секунд
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            // Обновление элементов на странице
+            document.getElementById('countdown-days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+            
+            // Если дата свадьбы прошла
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('countdown-days').textContent = '00';
+                document.getElementById('countdown-hours').textContent = '00';
+                document.getElementById('countdown-minutes').textContent = '00';
+                document.getElementById('countdown-seconds').textContent = '00';
+            }
+        }
+        
+        // Обновление обратного отсчета каждую секунду
+        updateCountdown();
+        const countdownInterval = setInterval(updateCountdown, 1000);
+        
+        // Инициализация анимации GSAP
+        gsap.registerPlugin(ScrollTrigger);
+        
+        gsap.to('.corner', {
+            opacity: 0.2,
+            stagger: 0.2,
+            duration: 1,
+            ease: 'power2.inOut'
+        });
+        
+        // Параллакс эффект для фоновых элементов
+        document.addEventListener('mousemove', function(e) {
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+            
+            gsap.to('.corner', {
+                x: moveX,
+                y: moveY,
+                duration: 1,
+                ease: 'power2.out'
+            });
+            
+            gsap.to('.hearts', {
+                x: moveX * 0.5,
+                y: moveY * 0.5,
+                duration: 1,
+                ease: 'power2.out'
+            });
+        });
+    </script>
+</body>
+</html>
